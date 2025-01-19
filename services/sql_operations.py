@@ -1,7 +1,14 @@
 import logging
 import pymssql
+import os
 
-def insert_into_sql(df, sql_server, sql_database, sql_username, sql_password, sql_table_name):
+sql_server = os.environ["SQL_SERVER"]  # Dirección del servidor SQL
+sql_username = os.environ["SQL_USERNAME"]  # Usuario de SQL Server
+sql_password = os.environ["SQL_PASSWORD"]  # Contraseña de SQL Server
+sql_table_string = os.environ["SQL_TABLE_LANDING"]
+sql_database, schema_name, table_name = sql_table_string.split('.') 
+
+def insert_into_sql(df):
     try:
         with pymssql.connect(
             server=sql_server,
@@ -13,8 +20,14 @@ def insert_into_sql(df, sql_server, sql_database, sql_username, sql_password, sq
 
             # Crear la tabla si no existe
             create_table_query = f"""
-            IF NOT EXISTS (SELECT * FROM sysobjects WHERE name='{sql_table_name.split('.')[-1]}' AND xtype='U')
-            CREATE TABLE {sql_table_name} (
+            USE {sql_database};
+            IF NOT EXISTS (
+                SELECT * 
+                FROM {sql_database}.sys.tables t
+                INNER JOIN {sql_database}.sys.schemas s ON t.schema_id = s.schema_id
+                WHERE t.name = '{table_name}' AND s.name = '{schema_name}'
+            )
+            CREATE TABLE {sql_table_string} (
                 [ID] INT IDENTITY(1,1) PRIMARY KEY,
                 [Operador] VARCHAR(MAX) NULL,
                 [Equipo] INT NULL,
@@ -45,12 +58,12 @@ def insert_into_sql(df, sql_server, sql_database, sql_username, sql_password, sq
             """
             cursor.execute(create_table_query)
             conn.commit()
-            logging.info(f"Tabla {sql_table_name} verificada/creada.")
+            logging.info(f"Tabla {sql_table_string} verificada/creada.")
 
             # Insertar los datos
             for _, row in df.iterrows():
                 insert_query = f"""
-                INSERT INTO {sql_table_name} (
+                INSERT INTO {sql_table_string} (
                     Operador, Equipo, Turno, Conexion, Diametro, [Orden de Produccion], Lado, Colada, [Codigo Unico],
                     [Varicion de Diametro], Ovalidad, Paso, Conicidad, [Longitud de rosca], [Altura de rosca], [Perfil de Rosca],
                     [Espesor de cara], Estado, [Motivo Descarte], Comentario, Month, Day, Year, Hour

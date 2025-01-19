@@ -19,11 +19,6 @@ from services.blob_operations import copy_processed_files_to_blob
 # Configuración de conexiones
 file_share_connection_string = os.environ["AZURE_FILE_SHARE_CONNECTION_STRING"]
 file_share_name = os.environ["AZURE_FILE_SHARE"]  # Nombre del recurso compartido
-sql_server = os.environ["SQL_SERVER"]  # Dirección del servidor SQL
-sql_database = os.environ["SQL_DATABASE"]  # Nombre de la base de datos
-sql_username = os.environ["SQL_USERNAME"]  # Usuario de SQL Server
-sql_password = os.environ["SQL_PASSWORD"]  # Contraseña de SQL Server
-sql_table_name = os.environ["SQL_TABLE_LANDING"]  # Nombre de la tabla destino
 blob_storage_connection_string = os.environ["AZURE_BLOB_CONNECTION_STRING"]
 blob_container_name = os.environ["AZURE_CONTAINER_BLOB"]
 blob_hash_container_name = os.environ["AZURE_CONTAINER_BLOB_HASH"]
@@ -61,14 +56,7 @@ def process_excel(req: func.HttpRequest) -> func.HttpResponse:
 
         # Intentar insertar datos en SQL Server
         try:
-            insert_into_sql(
-                consolidated_df,
-                sql_server,
-                sql_database,
-                sql_username,
-                sql_password,
-                sql_table_name
-            )
+            insert_into_sql(consolidated_df)
         except Exception as e:
             logging.error(f"Error al insertar datos en SQL Server: {e}")
             return func.HttpResponse(f"Error en el proceso SQL: {e}", status_code=500)
